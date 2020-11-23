@@ -559,3 +559,48 @@ func TestTransfer(t *testing.T) {
 	t.Logf("to account balance: %d after exec contract method", cState.GetBalance(types.HexToAddress("0x0000000000000000000000000000000000000001")))
 	return
 }
+
+func TestDataCall(t *testing.T) {
+	wasmFile := "/Users/stephen/dev/workspaces/blockchain/xunlei/tc-wasm/src/github.com/xunleichain/tc-wasm/testdata/data.wasm"
+	wasmBytes, err := ioutil.ReadFile(wasmFile)
+	if err != nil {
+		t.Fatalf("read module file %s failed: %v", wasmFile, err)
+	}
+
+	addr := types.BytesToAddress([]byte{0x1, 0x2, 0x3, 0x4})
+	cState.SetCode(addr, wasmBytes)
+
+	caller := types.BytesToAddress([]byte{0x4, 0x3, 0x2, 0x1})
+	contract := vm.NewContract(caller.Bytes(), addr.Bytes(), nil, 0)
+	contract.CodeAddr = &addr
+	ctx := Context{
+		Time:        new(big.Int).SetUint64(ctxTime),
+		Token:       addr,
+		BlockNumber: big.NewInt(3456),
+	}
+	eng := vm.NewEngine(contract, 1000000, cState, log.Test())
+	Inject(&ctx, cState)
+	app, err := eng.NewApp(addr.String(), nil, false)
+	if err != nil {
+		t.Fatalf("new app error: %v", err)
+	}
+
+	input := make([]byte, 0)
+	eng.Contract.Input = input
+	ret, err := eng.Run(app, input)
+	t.Logf("ret: %d, err: %v", ret, err)
+	t.Logf("gas used: %d", eng.GasUsed())
+
+	// m, err := wasm.ReadModule(bytes.NewReader(wasmBytes), vm.NewEnvTable().Resolver)
+	// if err != nil {
+	// 	t.Fatalf("new module failed: %v", err)
+	// }
+	// vm, err := exec.NewVM(m, nil)
+	// if err != nil {
+	// 	t.Fatalf("new vm failed: %v", err)
+	// }
+	// _, err = vm.ExecCode(2)
+	// if err != nil {
+	// 	t.Fatalf("run error: %v", err)
+	// }
+}

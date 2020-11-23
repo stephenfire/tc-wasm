@@ -124,6 +124,10 @@ func (env *EnvTable) resolveImport(name string) (*wasm.Module, error) {
 	return &env.Module, nil
 }
 
+func (env *EnvTable) Resolver(name string) (*wasm.Module, error) {
+	return env.resolveImport(name)
+}
+
 // RegisterFunc Register env function for wasm module
 func (env *EnvTable) RegisterFunc(name string, fn EnvFunc) {
 	if entry, exist := env.Exports.Entries[name]; exist {
